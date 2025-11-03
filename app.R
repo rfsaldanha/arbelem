@@ -76,7 +76,16 @@ ui <- page_navbar(
             label = "Indicadores",
             choices = NULL,
             multiple = TRUE
-          )
+          ),
+          numericInput(
+            inputId = "readings",
+            label = "Últimas leituras",
+            min = 1,
+            max = 4000,
+            step = 1,
+            value = 500
+          ),
+          tags$caption("A estação realiza uma leitura a cada 10 minutos.")
         ),
         vchartOutput(outputId = "graph")
       )
@@ -118,6 +127,7 @@ server <- function(input, output, session) {
 
   output$graph <- renderVchart({
     req(input$indicators)
+    req(input$readings)
 
     # Refresh every 1 minute
     invalidateLater(millis = 600000, session = session)
@@ -127,7 +137,7 @@ server <- function(input, output, session) {
       device_id = "0325280630",
       elements_ids = input$indicators,
       ts = Sys.time(),
-      number = 144 * 2
+      number = input$readings
     )
 
     # Adjust
