@@ -68,7 +68,16 @@ ui <- page_navbar(
     # Card
     card(
       full_screen = TRUE,
-      card_body(
+      layout_sidebar(
+        sidebar = sidebar(
+          open = "closed",
+          selectInput(
+            inputId = "indicators",
+            label = "Indicadores",
+            choices = NULL,
+            multiple = TRUE
+          )
+        ),
         vchartOutput(outputId = "graph")
       )
     )
@@ -101,13 +110,22 @@ ui <- page_navbar(
 
 # Server
 server <- function(input, output, session) {
+  updateSelectInput(
+    inputId = "indicators",
+    choices = list_elements(device_id = "0325280630") |> unlist(),
+    selected = c("PM2.5", "O3 GCc")
+  )
+
   output$graph <- renderVchart({
+    req(input$indicators)
+
+    # Refresh every 1 minute
     invalidateLater(millis = 600000, session = session)
 
     # Get data
     res <- get_reads_multiple_until(
       device_id = "0325280630",
-      elements_ids = c("PM2.5", "O3 GCc"),
+      elements_ids = input$indicators,
       ts = Sys.time(),
       number = 144 * 2
     )
@@ -117,6 +135,7 @@ server <- function(input, output, session) {
       arrange(ts) |>
       mutate(ts = as_datetime(ts))
 
+    # Plot
     vchart(res) |>
       v_line(
         aes(x = ts, y = value, color = sensor_tag),
